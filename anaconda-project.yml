@@ -1,0 +1,45 @@
+name: RemoteNotebook
+description: |
+  Use jupyter-kernel-gateway to run the Jupyter kernel as a deployment
+  and connect from your local Jupyter Notebook. Packages must be added
+  to the default env_spec and not the local.
+
+packages:
+- python=3.8
+- notebook>=6
+
+env_specs:
+  default:
+    packages:
+      - jupyter_kernel_gateway
+      - pandas
+      - hvplot
+      - panel
+
+  ## The local env, where you will be running
+  ## the Jupyter Notebook UI, is a "thin-client"
+  ## and does not need any packages other than
+  ## notebook.
+  local: {}
+
+channels:
+- defaults
+
+variables:
+  DEPLOYMENT_TOKEN:
+    encrypted: false
+    default: 'set me'
+  DEPLOYMENT_URL:
+    encrypted: false
+    default: 'set me'
+
+commands:
+  notebook:
+    unix: |
+      JUPYTER_GATEWAY_HEADERS="{\"Authorization\": \"Bearer $DEPLOYMENT_TOKEN\"}" \
+      jupyter notebook --gateway-url=$DEPLOYMENT_URL
+    env_spec: local
+  kernel-gateway:
+    unix: "jupyter kernelgateway --ip={{ address or '0.0.0.0' }} --port={{ port or '8086' }} --debug"
+    supports_http_options: False
+    env_spec: default
